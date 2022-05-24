@@ -7,6 +7,7 @@ import ipaddress
 import os
 import json
 import datetime
+import yaml
 from elasticsearch import Elasticsearch
 from ipfixdef import IPFIX_DEF
 
@@ -35,24 +36,36 @@ def getipv4(l,s):
 def getdatefrommilli(t):
   return (str(datetime.datetime.fromtimestamp(32400 + t/1000)))
 
-
-# functions ------------------------------------------------
   
-##### get env 
-envd = os.environ
-# port
-if ( "flow_port" in envd ): port = int(envd["flow_port"]);
-else: port = 9005
+# env ------------------------------------------------------
+## get from config.yaml
+config = {}
+if ( os.path.isfile("config.yaml") ):
+  with open("config.yaml", "r") as f:
+    config = yaml.load(f)
 
-# idb
-if ( "flow_idbaddr" in envd ): idbaddr =envd["flow_idbaddr"]
-else: idbaddr = '127.0.0.1'
-if ( "flow_idbport" in envd ): idbport =int(envd["flow_idbport"])
-else: idbport = 8086
-if ( "flow_idbdbn" in envd ): idbdbn =envd["flow_idbdbn"]
-else: idbdbn ='nf'
-if ( "flow_ela" in envd ): idbdbn =envd["flow_ela"]
-else: elaaddr ='elasticsearch-svc'
+# get from env
+envd = os.environ
+
+  # port
+  port = int(envd["flow_port"])      if ( "flow_port" in envd )    else 9005
+
+  # influxdb
+  idb =envd["flow_idb"]              if ( "flow_idb" in envd )     else False
+  idbaddr =envd["flow_idbaddr"]      if ( "flow_idbaddr" in envd ) else '127.0.0.1'
+  idbport =int(envd["flow_idbport"]) if ( "flow_idbport" in envd ) else 8086
+  if ( "flow_idbdbn" in envd ): idbdbn =envd["flow_idbdbn"]
+  else: idbdbn ='nf'
+
+# elastic search
+if ( "flow_ela" in envd ): ela =envd["flow_ela"]
+else: elaaddr = False
+if ( "flow_elaaddr" in envd ): elaaddr =envd["flow_elaaddr"]
+else: elaaddr = '127.0.0.1'
+if ( "flow_elaport" in envd ): elaport =int(envd["flow_elaport"])
+else: elaport = 8086
+if ( "flow_elaidx" in envd ): eladbn =envd["flow_elaidx"]
+else: elaidx ='nf'
 
 # elasticsearch
 
@@ -66,7 +79,7 @@ sock = socket(AF_INET, SOCK_DGRAM); sock.bind(locaddr);
 
 # connect influxdb
 idb = influxdb.InfluxDBClient(host=idbaddr, port=idbport)
-idb.create_database(idbdbn)
+#idb.create_database(idbdbn)
 idb.switch_database(idbdbn)
 
 # ela
