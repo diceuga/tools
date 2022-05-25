@@ -1,0 +1,22 @@
+# dump
+flow_dump : "False"
+
+# port
+flow_port : 9005
+
+# influxdb
+flow_idb:     "True"
+flow_idbaddr: "127.0.0.1"
+flow_idbport: "8086"
+flow_idpdbn:  "nf"
+
+#elastic_search
+flow_ela:     "False"
+flow_elaaddr: ""
+flow_elaport: "0"
+flow_elauser: ""
+flow_elapass: ""
+flow_elaidx:  ""
+
+# time
+flow_time: 32400
