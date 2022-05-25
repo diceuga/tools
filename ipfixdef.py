@@ -413,7 +413,7 @@ IPFIX_DEF = {
 "456": { "key" : "mobileMSISDN",                            "type" : "string" },
 "457": { "key" : "httpStatusCode",                          "type" : "int" },
 "458": { "key" : "sourceTransportPortsLimit",               "type" : "int" },
-"459": { "key" : "httpRequestMethod string",                "type" : "current" },
+"459": { "key" : "httpRequestMethod",                       "type" : "string" },
 "460": { "key" : "httpRequestHost",                         "type" : "string" },
 "461": { "key" : "httpRequestTarget",                       "type" : "string" },
 "462": { "key" : "httpMessageVersion",                      "type" : "string" },
