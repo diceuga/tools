@@ -1,11 +1,11 @@
 # dump
-flow_dump : "False"
+flow_dump : "disable"
 
 # port
 flow_port : 9005
 
 # influxdb
-flow_idb:     "True"
+flow_idb:     "enable"
 flow_idbaddr: "127.0.0.1"
 flow_idbport: "8086"
 flow_idpdbn:  "nf"

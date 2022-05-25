@@ -6,6 +6,6 @@
     - output  : stdout, elasticsearch, influxdb(v6 only)
     - I use Juniper to check
   - Usage
-    - put ipfix-decorder.py and ipfixdef.py and config.yaml at same directory
-    - do "python3 ipfix-decorder.py
+    - put ipfixdecorder.py and ipfixdef.py and config.yaml at same directory
+    - do "python3 ipfixdecorder.py
 

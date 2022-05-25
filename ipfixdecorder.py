@@ -37,6 +37,13 @@ def getipv4(l,s):
 def getdatefrommilli(t):
   return (str(datetime.datetime.fromtimestamp(timeadj + t/1000)))
 
+def getmac(l,s):
+  nh = struct.unpack('>BBBBBB', message[s:s+l]);
+  return (str(hex(nh[0])) +":"+ str(hex(nh[1])) +":"+ str(hex(nh[2])) +":"+ str(hex(nh[3])) +":"+ str(hex(nh[4])) +":"+ str(hex(nh[5])))
+
+#def getstring(l,s)
+  
+
   
 # env ------------------------------------------------------
 ## get from config.yaml
@@ -50,14 +57,25 @@ envd = os.environ
 
 # prefer config.yaml
 # local dump
-dump = bool(conf["flow_dump"]) if ( "flow_dump" in conf ) else bool(envd["flow_dump"]) if ( "flow_dump" in envd ) else False
+dump = conf["flow_dump"] if ( "flow_dump" in conf ) else envd["flow_dump"] if ( "flow_dump" in envd ) else "disable"
+dump = True if ( dump == "enable" ) else False
+
+#if ( "flow_dump" in conf ):
+# print("YES")
+#else:
+# print("NO")
+#
+#print(envd["flow_dump"])
+#print(dump)
 pp = pprint.PrettyPrinter(indent=4)
 
 # port
 port = int(conf["flow_port"]) if ( "flow_port" in conf ) else int(envd["flow_port"]) if ( "flow_port" in envd ) else 9005
 
 # influxdb
-idbflg = bool(conf["flow_idb"])  if ( "flow_id"   in conf ) else bool(envd["flow_idb"]) if ( "flow_idb" in envd ) else False
+idbflg = conf["flow_idb"]  if ( "flow_idb"   in conf ) else envd["flow_idb"] if ( "flow_idb" in envd ) else "disable"
+idbflg = True if ( idbflg == "enable" ) else False
+
 if ( idbflg ):
   idbaddr = conf["flow_idbaddr"]      if ( "flow_idbaddr" in conf ) else envd["flow_idbaddr"]      if ( "flow_idbaddr" in envd ) else ""
   idbport = int(conf["flow_idbport"]) if ( "flow_idbport" in conf ) else int(envd["flow_idbport"]) if ( "flow_idbport" in envd ) else 0
@@ -71,7 +89,9 @@ if ( ( idbaddr == "" ) or ( idbport == 0 ) or ( idbdbn == "") ):
  idbflg = False
 
 # elastic search
-elaflg = bool(conf["flow_ela"])  if ( "flow_ela"  in conf ) else bool(envd["flow_ela"]) if ( "flow_ela" in envd ) else False 
+elaflg = conf["flow_ela"]  if ( "flow_ela"  in conf ) else envd["flow_ela"] if ( "flow_ela" in envd ) else "disable"
+elaflg = True if ( elaflg == "enable" ) else False
+
 if ( elaflg ):
   elaaddr = conf["flow_elaaddr"]      if ( "flow_elaaddr" in conf ) else envd["flow_elaaddr"]      if ( "flow_elaaddr" in envd ) else ""
   elaport = int(conf["flow_elaport"]) if ( "flow_elaport" in conf ) else int(envd["flow_elaport"]) if ( "flow_elaport" in envd ) else 0
@@ -90,7 +110,6 @@ if ( ( elaaddr == "" ) or ( elaport == 0 ) or ( elauser == "" ) or ( elapass == 
 
 # time_adjust(def JST(+9))
 timeadj  = bool(conf["flow_time"]) if ( "flow_time" in conf ) else bool(envd["flow_time"]) if ( "flow_time" in envd ) else 32400
-
 
 
 ##### bind/connection
@@ -261,6 +280,8 @@ while True:
                 doc[i["key"]] = getint(i["len"],pos);
               elif ( i["type"] == "ipv6Address"):
                 doc[""+i["key"]] = getipv6(i["len"],pos);
+              elif ( i["type"] == "ipv4Address"):
+                doc[""+i["key"]] = getipv4(i["len"],pos);
               elif ( i["type"] == "dateTimeMilliseconds"):
                 doc[i["key"]] = getint(i["len"],pos);
                 doc[i["key"] + "_str" ] = getdatefrommilli(doc[i["key"]])
@@ -311,13 +332,10 @@ while True:
           for i in otp[sa][did][sid]["format"] : 
             if (i["type"] == "int"):
               op[sa][did][i["key"]] = doc[i["key"]] = getint(i["len"],pos)
-              #doc.update({ i["key"]: getint(i["len"],pos) })
             elif ( i["type"] == "ipv6Address"):
               op[sa][did][i["key"]] = doc[i["key"]] = getipv6(i["len"],pos)
-              #doc.update({ i["key"]: getipv6(i["len"],pos) })
             elif ( i["type"] == "ipv4Address"):
               op[sa][did][i["key"]] = doc[i["key"]] = getipv4(i["len"],pos)
-              #doc.update({ i["key"]: getipv4(i["len"],pos) })
             elif ( i["type"] == "dateTimeMilliseconds"):
               op[sa][did][i["key"]] = doc[i["key"]] = getint(i["len"],pos);
               op[sa][did][i["key"] + "_str"] = doc[i["key"] + "_str" ] = getdatefrommilli(doc[i["key"]])
