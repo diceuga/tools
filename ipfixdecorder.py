@@ -1,4 +1,5 @@
 from socket import *
+import socket
 from bitstring import *
 import struct
 import datetime
@@ -60,13 +61,12 @@ envd = os.environ
 dump = conf["flow_dump"] if ( "flow_dump" in conf ) else envd["flow_dump"] if ( "flow_dump" in envd ) else "disable"
 dump = True if ( dump == "enable" ) else False
 
-#if ( "flow_dump" in conf ):
-# print("YES")
-#else:
-# print("NO")
-#
-#print(envd["flow_dump"])
-#print(dump)
+rhost = conf["flow_rhost"] if ( "flow_rhost" in conf ) else envd["flow_rhost"] if ( "flow_rhost" in envd ) else "disable"
+rhost = True if ( rhost == "enable" ) else False
+
+#flow_rif:   "enable"
+#flow_regif: "^PEER.*"
+
 pp = pprint.PrettyPrinter(indent=4)
 
 # port
@@ -116,7 +116,7 @@ timeadj  = bool(conf["flow_time"]) if ( "flow_time" in conf ) else bool(envd["fl
 #host   = '10.2.255.102' #accept dest address,  is any
 host   = '0.0.0.0' #accept dest address,  is any
 locaddr = (host,port)   
-sock = socket(AF_INET, SOCK_DGRAM); sock.bind(locaddr);
+sock = socket.socket(AF_INET, SOCK_DGRAM); sock.bind(locaddr);
 
 # connect influxdb
 if ( idbflg ):
@@ -137,7 +137,15 @@ M_SIZE = 65535          # buffer
 while True:
   try:
     message, cli_addr = sock.recvfrom(M_SIZE)
-    sa = cli_addr[0]	# source address
+    sa    = cli_addr[0]	            # source address
+
+    sname = ""
+    if ( rhost ):
+      try: 
+        sname = socket.gethostbyaddr(sa)[0] # hosnamet
+      except socket.error:
+        pass
+
     if not ( sa in dtp ): dtp[sa] = {}
     if not ( sa in otp ): otp[sa] = {}
     if not ( sa in op ):  op[sa]  = {}
@@ -296,27 +304,44 @@ while True:
               pc = doc["packetDeltaCount"] * op[sa][did]["samplingInterval"]
               bc = doc["octetDeltaCount"] * 8 * op[sa][did]["samplingInterval"]
 
-              if ("destinationIPv6Address" in doc):
-                json_body = [
-                   {
-                     "measurement" : "v6",
-                     "tags" : {
-                       "host"   : sa,
-                       "bgpSourceAsNumber"      : doc["bgpSourceAsNumber"],
-                       "bgpDestinationAsNumber" : doc["bgpDestinationAsNumber"], 
-                       "sourceIPv6Address"      : doc["sourceIPv6Address"],
-                       "destinationIPv6Address" : doc["destinationIPv6Address"],
-                       "ingressInterface"       : doc["ingressInterface"],
-                       "egressInterface"        : doc["egressInterface"],
-                     },
-                     "time" : doc["flowEndMilliseconds"] * 1000000,
-                     "fields" : {
-                       "packets" : pc,
-                       "octets"  : bc ,
-                     }
-                   }
-                ]
-                if ( idbflg ):
+              if ( idbflg ):
+                #json_body = {};
+                json_body = [];
+                json_body.append([None])
+                json_body[0] = {};
+                json_body[0]["tags"] = {}; json_body[0]["fields"] = {}
+                json_body[0]["tags"]["host"] = sa
+                json_body[0]["tags"]["hostname"] = sname
+                if ( "bgpSourceAsNumber" in doc ):        json_body[0]["tags"]["bgpSourceAsNumber"] = str(doc["bgpSourceAsNumber"])
+                if ( "bgpDestinationAsNumber" in doc ):   json_body[0]["tags"]["bgpDestinationAsNumber"] = doc["bgpDestinationAsNumber"]
+                if ( "ingressInterface" in doc ):         json_body[0]["tags"]["ingressInterface"] = doc["ingressInterface"]
+                if ( "egressInterface" in doc ):          json_body[0]["tags"]["egressInterface"] = doc["egressInterface"]
+                if ( "flowEndMilliseconds" in doc ):      json_body[0]["time"] = doc["flowEndMilliseconds"] * 1000000
+                if ( "protocolIdentifier" in doc ):       json_body[0]["tags"]["protocolIdentifier"] = doc["protocolIdentifier"]
+                if ( "sourceTransportPort" in doc ):      json_body[0]["tags"]["sourceTransportPort"] = doc["sourceTransportPort"]
+                if ( "destinationTransportPort" in doc ): json_body[0]["tags"]["destinationTransportPort"] = doc["destinationTransportPort"]
+
+                json_body[0]["fields"]["packets"] = pc
+                json_body[0]["fields"]["octets"]  = bc
+                json_body[0]["fields"]["bits"]    = bc
+
+                if ("destinationIPv6Address" in doc):
+                  #json_body[0]["measurement"] = "v6"
+                  #json_body[0]["tags"]["sourceIPv6Address"] = doc["sourceIPv6Address"]
+                  #json_body[0]["tags"]["destinationIPv6Address"] = doc["destinationIPv6Address"]
+                  #idb.write_points(json_body)
+
+                  json_body[0]["measurement"] = "flow"
+                  json_body[0]["tags"]["sourceAddress"] = doc["sourceIPv6Address"]
+                  json_body[0]["tags"]["destinationAddress"] = doc["destinationIPv6Address"]
+                  json_body[0]["tags"]["flowtype"] = "IPv6"
+                  idb.write_points(json_body)
+
+                if ("destinationIPv4Address" in doc):
+                  json_body[0]["measurement"] = "flow"
+                  json_body[0]["tags"]["sourceAddress"] = doc["sourceIPv4Address"]
+                  json_body[0]["tags"]["destinationAddress"] = doc["destinationIPv4Address"]
+                  json_body[0]["tags"]["flowtype"] = "IPv4"
                   idb.write_points(json_body)
 
               doc["packets"] = pc; doc["octets"] = bc;
@@ -354,3 +379,5 @@ while True:
   except KeyboardInterrupt:
     sock.close()
     break
+  except socket.error: 
+    pass

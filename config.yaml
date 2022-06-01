@@ -11,12 +11,17 @@ flow_idbport: "8086"
 flow_idpdbn:  "nf"
 
 #elastic_search
-flow_ela:     "False"
+flow_ela:     "disable"
 flow_elaaddr: ""
 flow_elaport: "0"
 flow_elauser: ""
 flow_elapass: ""
 flow_elaidx:  ""
 
-# time
-flow_time: 32400
+# time 
+flow_time: 32400 # this is 9h = JST
+
+# resolve
+flow_rhost: "enable"
+flow_rif:   "enable"
+flow_regif: "^PEER.*"
